@@ -196,7 +196,7 @@ func parseYear(s string) (y int, finished, ok bool) {
 	return y, false, true
 }
 
-func parseMonth(s string) (m int, finished, ok bool) {
+func parseMonth(s string, relaxed bool) (m int, finished, ok bool) {
 	month := s[4:6]
 
 	var err error
@@ -205,7 +205,7 @@ func parseMonth(s string) (m int, finished, ok bool) {
 		return 0, false, false
 	}
 
-	if m < 1 || m > 12 {
+	if !relaxed && (m < 1 || m > 12) {
 		return 0, false, false
 	}
 
@@ -221,7 +221,7 @@ func parseMonth(s string) (m int, finished, ok bool) {
 	return m, false, true
 }
 
-func parseDay(s string, y, m int) (d int, finished, ok bool) {
+func parseDay(s string, y, m int, relaxed bool) (d int, finished, ok bool) {
 	day := s[6:8]
 
 	d, err := strconv.Atoi(day)
@@ -229,15 +229,17 @@ func parseDay(s string, y, m int) (d int, finished, ok bool) {
 		return 0, false, false
 	}
 
-	if d < 1 || d > 31 {
+	if !relaxed && (d < 1 || d > 31) {
 		return 0, false, false
 	}
 
 	// check valid Date(year,month,day)
 	// The day before the first day of next month:
-	t := time.Date(y, time.Month(m+1), 0, 0, 0, 0, 0, time.UTC)
-	if d > t.Day() {
-		return 0, false, false
+	if !relaxed {
+		t := time.Date(y, time.Month(m+1), 0, 0, 0, 0, 0, time.UTC)
+		if d > t.Day() {
+			return 0, false, false
+		}
 	}
 
 	// "YYYYMMDD"
@@ -252,7 +254,7 @@ func parseDay(s string, y, m int) (d int, finished, ok bool) {
 	return d, false, true
 }
 
-func parseHour(s string) (h int, finished, ok bool) {
+func parseHour(s string, relaxed bool) (h int, finished, ok bool) {
 	hour := s[8:10]
 
 	h, err := strconv.Atoi(hour)
@@ -260,7 +262,7 @@ func parseHour(s string) (h int, finished, ok bool) {
 		return 0, false, false
 	}
 
-	if h > 23 {
+	if !relaxed && h > 23 {
 		return 0, false, false
 	}
 
@@ -276,7 +278,7 @@ func parseHour(s string) (h int, finished, ok bool) {
 	return h, false, true
 }
 
-func parseMinute(s string) (min int, finished, ok bool) {
+func parseMinute(s string, relaxed bool) (min int, finished, ok bool) {
 	minute := s[10:12]
 
 	min, err := strconv.Atoi(minute)
@@ -284,7 +286,7 @@ func parseMinute(s string) (min int, finished, ok bool) {
 		return 0, false, false
 	}
 
-	if min > 59 {
+	if !relaxed && min > 59 {
 		return 0, false, false
 	}
 
@@ -300,7 +302,7 @@ func parseMinute(s string) (min int, finished, ok bool) {
 	return min, false, true
 }
 
-func parseSecond(s string) (sec int, finished bool, off int, ok bool) {
+func parseSecond(s string, relaxed bool) (sec int, finished bool, off int, ok bool) {
 
 	off = 14
 
@@ -315,7 +317,7 @@ func parseSecond(s string) (sec int, finished bool, off int, ok bool) {
 		return 0, false, off, false
 	}
 
-	if sec > 59 {
+	if !relaxed && sec > 59 {
 		return 0, false, off, false
 	}
 
@@ -382,7 +384,7 @@ func DateTime(s string, relaxed bool) (time.Time, bool) {
 		return d, true
 	}
 
-	m, finished, ok := parseMonth(s)
+	m, finished, ok := parseMonth(s, relaxed)
 	if !ok {
 		return d, false
 	}
@@ -392,7 +394,7 @@ func DateTime(s string, relaxed bool) (time.Time, bool) {
 		return d, true
 	}
 
-	day, finished, ok := parseDay(s, y, m)
+	day, finished, ok := parseDay(s, y, m, relaxed)
 	if !ok {
 		return d, false
 	}
@@ -402,7 +404,7 @@ func DateTime(s string, relaxed bool) (time.Time, bool) {
 		return d, true
 	}
 
-	h, finished, ok := parseHour(s)
+	h, finished, ok := parseHour(s, relaxed)
 	if !ok {
 		return d, false
 	}
@@ -412,7 +414,7 @@ func DateTime(s string, relaxed bool) (time.Time, bool) {
 		return d, true
 	}
 
-	min, finished, ok := parseMinute(s)
+	min, finished, ok := parseMinute(s, relaxed)
 	if !ok {
 		return d, false
 	}
@@ -422,7 +424,7 @@ func DateTime(s string, relaxed bool) (time.Time, bool) {
 		return d, true
 	}
 
-	sec, finished, off, ok := parseSecond(s)
+	sec, finished, off, ok := parseSecond(s, relaxed)
 	if !ok {
 		return d, false
 	}
